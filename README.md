@@ -1,6 +1,10 @@
 # PlugCoffee
 
-**TODO: Add description**
+This plug compiles and serves coffeescript files.
+
+```elixir
+Plug.Adapters.Cowboy.http PlugCoffee.Plug, [root: "public/coffee", urls: ["/js"], cache_compile_dir: "/tmp"]
+```
 
 ## Installation
 
