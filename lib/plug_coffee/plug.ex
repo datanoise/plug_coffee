@@ -42,6 +42,7 @@ defmodule PlugCoffee.Plug do
       String.contains?(path, "..") ->
         conn
         |> send_err_resp(403, "Forbidden\n")
+        |> halt
       true ->
         do_path conn, path, opts
     end
@@ -66,8 +67,11 @@ defmodule PlugCoffee.Plug do
         |> put_resp_header("content-type", "application/javascript")
         |> put_resp_header("last-modified", format_date(mtime))
         |> send_resp(200, source)
+        |> halt
       else
-        conn |> send_err_resp(304, "Not modified")
+        conn
+        |> send_err_resp(304, "Not modified")
+        |> halt
       end
     else
       conn
