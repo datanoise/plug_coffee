@@ -50,7 +50,8 @@ defmodule PlugCoffee.Compiler do
 
   defp compile_coffee(file_name, compile_in, opts) do
     timestamp = file_name |> file_mtime |> Date.to_secs
-    cache_file_name = "#{timestamp}_#{Path.basename(file_name, ".coffee")}.js"
+    cache_file_name = Path.split(file_name) |> Enum.join("_") |> Path.basename(".coffee")
+    cache_file_name = "#{timestamp}_#{cache_file_name}.js"
     cache_file = Path.join(compile_in, cache_file_name)
     if File.exists?(cache_file) do
       Logger.info "Reading #{file_name} from cache"
