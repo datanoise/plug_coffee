@@ -103,8 +103,9 @@ defmodule PlugCoffee.Plug do
           Date.diff(cache_time, last_modified, :secs) > 0
           _ -> true
       end
+    else
+      true
     end
-    true
   end
 
   defp format_date(date) do
