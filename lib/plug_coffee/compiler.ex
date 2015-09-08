@@ -21,7 +21,7 @@ defmodule PlugCoffee.Compiler do
 
   defp open_db_file(name) do
     case :dets.open_file(name, type: :set) do
-      {:ok, name} = ret -> ret
+      {:ok, _name} = ret -> ret
       {:error, reason} -> {:stop, reason}
     end
   end
@@ -54,7 +54,7 @@ defmodule PlugCoffee.Compiler do
       state}
   end
 
-  def terminate(reason, state) do
+  def terminate(_reason, state) do
     case :dets.close(state) do
       :ok -> :ok
       {:error, reason} ->
