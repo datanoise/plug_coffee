@@ -13,64 +13,76 @@ defmodule PlugCoffee.Compiler do
   end
 
   def init(:ok) do
-    {:ok, %{}}
+    Application.get_env(:plug_coffee, :db_file, "tmp/coffee_cache.db")
+    |> check_filename!
+    |> String.to_char_list
+    |> open_db_file
   end
 
-  def compile(file_name, compile_in, opts) do
-    GenServer.call(__MODULE__, {:compile, file_name, compile_in, opts})
-  end
-
-  def handle_call({:compile, file_name, compile_in, opts}, _from, state) do
-    if need_recompile?(state, file_name) do
-      source = compile_coffee(file_name, compile_in, opts)
-      state = Map.put_new(state, file_name, {source, file_mtime(file_name)})
-    else
-      {source, _} = Map.get(state, file_name)
-    end
-    {:reply, source, state}
-  end
-
-  defp need_recompile?(state, file_name) do
-    case Map.fetch(state, file_name) do
-      {:ok, {_, last_mtime}} ->
-        Date.diff(last_mtime, file_mtime(file_name), :secs) > 0
-      _ -> true
+  defp open_db_file(name) do
+    case :dets.open_file(name, type: :set) do
+      {:ok, name} = ret -> ret
+      {:error, reason} -> {:stop, reason}
     end
   end
 
-  defp compile_coffee(file_name, false, opts) do
+  defp check_filename!(name) do
+    dir_name = Path.dirname(name)
+    unless File.dir?(dir_name) do
+      :ok = File.mkdir_p dir_name
+    end
+    name
+  end
+
+  def compile(file_name, opts) do
+    GenServer.call(__MODULE__, {:compile, file_name, opts})
+  end
+
+  def handle_call({:compile, file_name, opts}, _from, state) do
+    {:reply,
+      case lookup_file(file_name, state) do
+        {:ok, source} ->
+          Logger.info "Found cached version of #{file_name}"
+          source
+        _ ->
+          Logger.info "Compiling #{file_name}"
+          source = compile_coffee(file_name, opts)
+          :ok = :dets.match_delete(state, {{file_name, :_}, :_})
+          :ok = :dets.insert(state, {{file_name, file_mtime(file_name)}, source})
+          source
+      end,
+      state}
+  end
+
+  def terminate(reason, state) do
+    case :dets.close(state) do
+      :ok -> :ok
+      {:error, reason} ->
+        Logger.error "Failed to close DETS database: #{reason}"
+        :ok
+    end
+  end
+
+  defp lookup_file(file_name, state) do
+    key = {file_name, file_mtime(file_name)}
+    case :dets.lookup(state, key) do
+      [{^key, content} | _] -> {:ok, content}
+      _ -> :error
+    end
+  end
+
+  defp compile_coffee(file_name, opts) do
     args = ["-p", file_name]
     if Keyword.get(opts, :bare) do
       args = ["-b" | args]
     end
-    Logger.info "Compiling #{file_name}"
     {source, 0} = System.cmd @coffee_cmd, args
     source
   end
 
-  defp compile_coffee(file_name, compile_in, opts) do
-    timestamp = file_name |> file_mtime |> Date.to_secs
-    cache_file_name = file_name
-                      |> Path.split
-                      |> Enum.join("_")
-                      |> Path.basename(".coffee")
-    cache_file_name = "#{timestamp}_#{cache_file_name}.js"
-    cache_file = Path.join(compile_in, cache_file_name)
-
-    if File.exists?(cache_file) do
-      Logger.info "Reading #{file_name} from cache"
-      File.read!(cache_file)
-    else
-      source = compile_coffee(file_name, false, opts)
-      Logger.info "Saving #{file_name} to #{cache_file}"
-      File.write!(cache_file, source)
-      source
-    end
-  end
-
   defp file_mtime(file_name) do
     file_info(mtime: mtime) = read_file_info(file_name)
-    Date.from(mtime)
+    mtime
   end
 
   defp read_file_info(file) do

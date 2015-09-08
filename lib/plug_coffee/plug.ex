@@ -20,14 +20,6 @@ defmodule PlugCoffee.Plug do
     unless File.exists?(root) do
       raise InvalidPathError, message: "Root folder doesn't exist"
     end
-
-    cache_compile_dir = Keyword.get(opts, :cache_compile_dir, false)
-    if cache_compile_dir do
-      unless File.exists?(cache_compile_dir) do
-        File.mkdir_p! cache_compile_dir
-      end
-    end
-
     opts
   end
 
@@ -51,7 +43,6 @@ defmodule PlugCoffee.Plug do
 
   defp do_path(conn, path, opts) do
     root = Keyword.get(opts, :root)
-    cache_compile_dir = Keyword.get(opts, :cache_compile_dir, false)
     compile_without_closure = Keyword.get(opts, :bare, false)
 
     coffee_file = path
@@ -62,7 +53,7 @@ defmodule PlugCoffee.Plug do
       file_info(mtime: mtime) = read_file_info(desired_path)
       mtime = Date.from(mtime)
       if is_modified_since(conn, mtime) do
-        source = PlugCoffee.Compiler.compile(desired_path, cache_compile_dir, bare: compile_without_closure)
+        source = PlugCoffee.Compiler.compile(desired_path, bare: compile_without_closure)
         conn
         |> put_resp_header("content-type", "application/javascript")
         |> put_resp_header("last-modified", format_date(mtime))
