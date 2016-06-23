@@ -74,6 +74,8 @@ defmodule PlugCoffee.Compiler do
     args = ["-p", file_name]
     args = if Keyword.get(opts, :bare) do
       ["-b" | args]
+    else
+      args
     end
     {source, 0} = System.cmd @coffee_cmd, args
     source
