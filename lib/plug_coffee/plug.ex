@@ -89,7 +89,7 @@ defmodule PlugCoffee.Plug do
   defp is_modified_since(conn, last_modified) do
     cache_time = Conn.get_req_header(conn, "if-modified-since") |> List.first
     if cache_time do
-      case DateFormat.parse(cache_time, @if_modified_format, :strftime) do
+      case Timex.parse(cache_time, @if_modified_format, :strftime) do
         {:ok, cache_time} ->
           Date.diff(cache_time, last_modified, :secs) > 0
           _ -> true
@@ -100,7 +100,7 @@ defmodule PlugCoffee.Plug do
   end
 
   defp format_date(date) do
-    {:ok, result} = DateFormat.format(date, @if_modified_format, :strftime)
+    {:ok, result} = Timex.format(date, @if_modified_format, :strftime)
     result
   end
 

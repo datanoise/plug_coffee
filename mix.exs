@@ -15,7 +15,7 @@ defmodule PlugCoffee.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [
-      applications: [:logger, :cowboy, :plug],
+      applications: [:logger, :cowboy, :plug, :timex],
       mod: {PlugCoffee, []}
     ]
   end
@@ -32,8 +32,8 @@ defmodule PlugCoffee.Mixfile do
   defp deps do
     [
       {:cowboy, "~> 1.0.0"},
-      {:plug, "~> 1.0"},
-      {:timex, "~> 0.19"}
+      {:plug, "~> 1.1"},
+      {:timex, "~> 2.1"}
     ]
   end
 end

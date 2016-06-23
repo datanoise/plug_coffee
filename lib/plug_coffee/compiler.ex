@@ -1,6 +1,5 @@
 defmodule PlugCoffee.Compiler do
   use GenServer
-  use Timex
   require Logger
 
   require Record
@@ -73,8 +72,8 @@ defmodule PlugCoffee.Compiler do
 
   defp compile_coffee(file_name, opts) do
     args = ["-p", file_name]
-    if Keyword.get(opts, :bare) do
-      args = ["-b" | args]
+    args = if Keyword.get(opts, :bare) do
+      ["-b" | args]
     end
     {source, 0} = System.cmd @coffee_cmd, args
     source
